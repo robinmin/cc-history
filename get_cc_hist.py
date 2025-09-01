@@ -221,22 +221,22 @@ def process_jsonl_file(jsonl_path: Path, output_dir: Path) -> Optional[str]:
         # Extract date from first message timestamp
         first_timestamp = messages[0].get("timestamp", "") if messages else ""
         date_str = extract_date_from_timestamp(first_timestamp)
-        
+
         # Create project subdirectory
         project_dir = output_dir / project_name
         project_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Generate output filename with conflict resolution
         base_filename = f"{date_str}.md"
         output_file = project_dir / base_filename
-        
+
         # Handle filename conflicts by adding counter
         counter = 1
         while output_file.exists():
             conflict_filename = f"{date_str}_{counter}.md"
             output_file = project_dir / conflict_filename
             counter += 1
-            
+
         # Check if we're skipping due to existing file (only for exact match)
         if counter > 1:
             print(f"Found existing file, creating: {output_file}")
@@ -286,7 +286,7 @@ def extract_session_metadata(messages: List[Dict]) -> Dict[str, str]:
         end_parts = end_time.split()
 
         if len(start_parts) > 1 and len(end_parts) > 1:
-            metadata["time_range"] = f"⏰ {start_parts[1]} - {end_parts[1]}"
+            metadata["time_range"] = f" {start_parts[1]} - {end_parts[1]}"
 
     return metadata
 
