@@ -50,6 +50,15 @@ def format_timestamp(timestamp: str) -> str:
         return timestamp
 
 
+def extract_date_from_timestamp(timestamp: str) -> str:
+    """Extract YYYYMMDD format from timestamp."""
+    try:
+        dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        return dt.strftime("%Y%m%d")
+    except:
+        return "unknown_date"
+
+
 def extract_project_name(cwd: str) -> str:
     """Extract project name from working directory."""
     if cwd:
@@ -209,17 +218,30 @@ def process_jsonl_file(jsonl_path: Path, output_dir: Path) -> Optional[str]:
         if not messages:
             return None
 
-        # Generate output filename
-        if summary:
-            filename = sanitize_filename(f"{project_name}_{summary}")
-        else:
-            filename = f"{project_name}_{session_id[:8]}"
-
-        output_file = output_dir / f"{filename}.md"
-
-        # Skip if file already exists
-        if output_file.exists():
-            print(f"Skipping existing file: {output_file}")
+        # Extract date from first message timestamp
+        first_timestamp = messages[0].get("timestamp", "") if messages else ""
+        date_str = extract_date_from_timestamp(first_timestamp)
+        
+        # Create project subdirectory
+        project_dir = output_dir / project_name
+        project_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate output filename with conflict resolution
+        base_filename = f"{date_str}.md"
+        output_file = project_dir / base_filename
+        
+        # Handle filename conflicts by adding counter
+        counter = 1
+        while output_file.exists():
+            conflict_filename = f"{date_str}_{counter}.md"
+            output_file = project_dir / conflict_filename
+            counter += 1
+            
+        # Check if we're skipping due to existing file (only for exact match)
+        if counter > 1:
+            print(f"Found existing file, creating: {output_file}")
+        elif (project_dir / base_filename).exists() and counter == 1:
+            print(f"Skipping existing file: {project_dir / base_filename}")
             return "skipped"
 
         # Generate markdown content
